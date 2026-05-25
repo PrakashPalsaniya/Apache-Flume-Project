@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  core-site.xml  —  Minimal HDFS core configuration
+  Points the default filesystem to the NameNode container.
+-->
+<configuration>
+
+  <!-- NameNode RPC address (matches docker-compose service name) -->
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://namenode:9000</value>
+    <description>URI of the HDFS NameNode</description>
+  </property>
+
+  <!-- Increase RPC timeout for slower environments -->
+  <property>
+    <name>ipc.client.connect.timeout</name>
+    <value>60000</value>
+  </property>
+
+  <property>
+    <name>ipc.client.connect.max.retries.on.timeouts</name>
+    <value>45</value>
+  </property>
+
+</configuration>

@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════════════════
+#  Docker Compose — Apache Flume Log Ingestion Pipeline (Group 20)
+#
+#  Services:
+#    namenode   — HDFS NameNode  (port 9870 web UI, 9000 RPC)
+#    datanode   — HDFS DataNode  (port 9864 web UI)
+#    flume      — Apache Flume agent (spooling dir → memory → HDFS)
+# ═══════════════════════════════════════════════════════════════════
+
+networks:
+  flume-net:
+    driver: bridge
+
+volumes:
+  namenode-data:
+  datanode-data:
+
+services:
+
+  # ─── HDFS NameNode ───────────────────────────────────────────────
+  namenode:
+    image: apache/hadoop:3
+    container_name: namenode
+    hostname: namenode
+    user: root
+    command: ["hdfs", "namenode"]
+    environment:
+      ENSURE_NAMENODE_DIR: "/data/nameNode"
+    volumes:
+      - namenode-data:/data
+      - ./core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+    ports:
+      - "9870:9870"   # NameNode Web UI
+      - "9000:9000"   # NameNode RPC
+    networks:
+      - flume-net
+    healthcheck:
+      test: ["CMD-SHELL", "hdfs dfsadmin -safemode get 2>/dev/null | grep -q OFF"]
+      interval: 20s
+      timeout: 15s
+      retries: 20
+      start_period: 120s
+
+  # ─── HDFS DataNode ───────────────────────────────────────────────
+  datanode:
+    image: apache/hadoop:3
+    container_name: datanode
+    hostname: datanode
+    user: root
+    command: ["hdfs", "datanode"]
+    volumes:
+      - datanode-data:/data
+      - ./core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+    ports:
+      - "9864:9864"   # DataNode Web UI
+    depends_on:
+      namenode:
+        condition: service_healthy
+    networks:
+      - flume-net
+
+  # ─── Apache Flume Agent ──────────────────────────────────────────
+  flume:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flume-agent
+    hostname: flume-agent
+    volumes:
+      # Host-mounted spooling directory — drop .log files here
+      - ./spooling_dir:/opt/spooling_dir
+    depends_on:
+      namenode:
+        condition: service_healthy
+      datanode:
+        condition: service_started
+    networks:
+      - flume-net
+    ports:
+      - "41414:41414"
+    restart: on-failure

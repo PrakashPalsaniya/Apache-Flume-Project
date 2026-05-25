@@ -1,0 +1,29 @@
+# Spooling directory contents (files after Flume processing will have .COMPLETED suffix)
+spooling_dir/*.COMPLETED
+
+# Docker build cache
+.dockerignore
+
+# Logs
+*.log
+!spooling_dir/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Report directory
+report/*
+!report/*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+.env
+
+# Editor & IDE
+.vscode/
+.idea/
